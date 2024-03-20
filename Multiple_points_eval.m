@@ -1,59 +1,47 @@
 clc
 clear all
 close all
-addpath('C:\Users\OG277444\Documents\MATLAB\USRT_MATLAB\Functions')
+addpath('C:\RP\USRT_MATLAB\Functions\')
+addpath('C:\RP\USRT_MATLAB\Data\')
 load("h_step.txt")
-% Define predefined vectors
-h = []; % Example values for "h"
-tmax = []; % Example values for "tmax"
-epsilon = []; % Example values for "epsilon"
-tolerance = []; % Example values for "tolerance"
-alfa = []; % Example values for "tolerance"
+h = []; % % Initialise predifined vectors "h"...
+tmax = []; epsilon = []; tolerance = []; alfa = [];
 % Construct odeParam structure
 odeParam = struct('h', h, 'tmax', tmax, 'epsilon', epsilon, 'tolerance', tolerance, 'alfa', alfa);
 %%
-xSTART = 10; 
- xSTEP=2 ; %xLENGHT, ySTART, ySTEP, yLENGHT, angleSTART, angleSTEP, angleLENGHT
-xLENGTH=10;
+xSTART = 10;    ySTART = 0;    thetaSTART=0;
+xSTEP=2 ;       ySTEP=2;       thetaSTEP=pi/180;
+xLENGTH=10;     yLENGTH=2;     thetaLENGTH = pi;
 
-ySTART = 0; 
- ySTEP=2; %xLENGHT, ySTART, ySTEP, yLENGHT, angleSTART, angleSTEP, angleLENGHT
-yLENGTH=2;
-
-thetaSTART=-pi;
-thetaSTEP=pi/4;
-thetaLENGTH = pi;
-
+% Initialization of space vectors: 
 x = xSTART:xSTEP:(xSTART + xLENGTH) ;
- y = ySTART:ySTEP:(ySTART + yLENGTH) ;
-% theta = thetaSTART:thetaSTEP:(thetaSTART + thetaLENGTH);
-theta = [0, pi/6, pi/4, pi/3, pi/2, 2*pi/3, 3*pi/4, 5*pi/6, pi];
-N_theta=numel(theta);
-N_x=numel(x);
-N_y=numel(y);
+y = ySTART:ySTEP:(ySTART + yLENGTH) ;
+theta = thetaSTART:thetaSTEP:(thetaSTART + thetaLENGTH);
+% theta = [0, pi/6, pi/4, pi/3, pi/2, 2*pi/3, 3*pi/4, 5*pi/6, pi];
+
+% Number of elements at each parameter: 
+N_theta=numel(theta); N_x=numel(x); N_y=numel(y);
+
+% Define position matrix
 [X, Y, T] = meshgrid(x, y, theta) ;
 position = [X(:) Y(:), T(:)];
 nb_points = size(position, 1) ;
 
 for i = 1:nb_points
-    [result_ref] = rayTracing2DFunc([position(i,1),position(i,2)], [cos(position(i,3)), sin(position(i,3))],  "Euler", "IsoFluid", @gradient_2D_euler_addapted, ...
-    struct('h', 0.0001, 'tmax', 100., 'epsilon', 0.01));
-    reference = result_ref;
+    [result_ref] = rayTracing2DFunc([position(i,1),position(i,2)], [cos(position(i,3)), sin(position(i,3))],  "Euler", "IsoFluid", @gauss_2D, ...
+    struct('h', 0.1, 'tmax', 100., 'epsilon', 0.01));
+    reference = result_ref; % Rebundant yet allow to stock ref result values out-of script
     save("reference.mat","result_ref");
     reference = load ("reference.mat");
 
-    [result] = rayTracing2DFunc([position(i,1),position(i,2)], [cos(position(i,3)), sin(position(i,3))],  "RK4", "IsoFluid", @gradient_2D_euler_addapted, ...
-    struct('h', 0.01, 'tmax', 100., 'epsilon', 0.01, 'alfa', 0.5));
-    xv=result.x;   xv_ref=result_ref.x;
-    yv=result.y;   yv_ref=result_ref.x;
-    xsv=result.sx;  xsv_ref=result_ref.y;
-    ysv=result.sy;   syv_ref=result_ref.sy;
-    
-    ErrorMap(i,:) = ErrorFunc_2D(result, reference);
+    [result] = rayTracing2DFunc([position(i,1),position(i,2)], [cos(position(i,3)), sin(position(i,3))],  "RK4", "IsoFluid", @gauss_2D, ...
+    struct('h', 0.1, 'tmax', 100., 'epsilon', 0.01, 'alfa', 0.5));
+ 
+    ErrorMap(i,:) = ErrorFunc_2D(result, reference); 
 
 end
 
-M = [position ErrorMap];
+M = [position ErrorMap]; % Append two 2D arrays
 % Extract unique values from the second column
 u_values = unique(M(:, 2));
 
@@ -69,8 +57,8 @@ for i = 1:numel(u_values)
     sub_M{i} = M(indices, :);
 
     figure(i);
-    [X, Y] = meshgrid(sub_M{i}(:,1), sub_M{i}(:,3)) ; % set the parameters that do not iter in the loop
-    Z=griddata(sub_M{i}(:,1), sub_M{i}(:,3), sub_M{i}(:,5), X,Y);
+    [X, Y] = meshgrid(sub_M{i}(:,1), sub_M{i}(:,3)) ; % define the grid
+    Z=griddata(sub_M{i}(:,1), sub_M{i}(:,3), sub_M{i}(:,5), X,Y); % grid error data point to associated cordinate
     imagesc(sub_M{i}(:,1), sub_M{i}(:,3), Z);
     caxis([min(sub_M{i}(:,5)), max(sub_M{i}(:,5))]);
     xlim([10, 20]);
@@ -81,8 +69,6 @@ for i = 1:numel(u_values)
     ylabel('theta0');
 
 end
-
-
 
 
 %% OLD
