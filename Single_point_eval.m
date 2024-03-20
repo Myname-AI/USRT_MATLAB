@@ -1,34 +1,32 @@
 clc
 clear all
 close all
-addpath('C:\Users\OG277444\Documents\MATLAB\USRT_MATLAB\Functions')
+addpath('C:\RP\USRT_MATLAB\Functions\')
+addpath('C:\RP\USRT_MATLAB\Data\')
 % load("h_step.txt")
 solverType = ["Euler", "Euler-implicite", "Second-order RK",...
     "RK4", "DormandPrince RK4", "DormandPrince adaptative"]; 
 % Define predefined vectors
-h = []; % Example values for "h"
-tmax = []; % Example values for "tmax"
-epsilon = []; % Example values for "epsilon"
-tolerance = []; % Example values for "tolerance"
-alfa = []; % Example values for "tolerance"
+h = []; % Initialise predifined vectors "h"...
+tmax = []; epsilon = []; tolerance = []; alfa = []; 
 % Construct odeParam structure
 odeParam = struct('h', h, 'tmax', tmax, 'epsilon', epsilon, 'tolerance', tolerance, 'alfa', alfa);
-h_step = [0.01];
+h_step = [0.1]; %instead of txt file
 
-coords_init= [12, 0];
-dir_init = [0.5,0.5];
+coords_init = [12, 0]; % initial cordiantates of ray 
+dir_init = [0.5,0.5]; % anray lanch angle 
 
-%% Calculation of the reference case and error calculation
+%% Calculation of the reference case and error calculation 
 [result_ref] = rayTracing2DFunc([12,0], [0.5,0.5],  "Euler", "IsoFluid", @gauss_2D, ...
-    struct('h', 0.0001, 'tmax', 100., 'epsilon', 0.01));
-save("reference.mat","result_ref");
+    struct('h', 0.01, 'tmax', 100., 'epsilon', 0.01));
+save("reference.mat","result_ref"); % Rebundant yet allow to stock ref result values out-of script
 reference = load ("reference.mat");
 % [result] = rayTracing2DFunc([12,0], [0.5,0.5],  "Euler", "IsoFluid", @gauss_2D, ...
 %     struct('h', 0.1, 'tmax', 100., 'epsilon', 0.01));
-% [Error_max, Y_interp] = ErrorFunc_2D(result, reference);
+% [Error_max, Y_interp] = ErrorFunc_2D(result, reference); % Use of ErrorFunc
 %% Tracing of the VECTORS at given range in time: 
 figure(3)
-plot(result_ref.times, result_ref.x, 'LineWidth', 1.5, 'Color','m')  %'LineWidth',8, 'DisplayName'
+plot(result_ref.times, result_ref.x, 'LineWidth', 1.5, 'Color','m')  
 legend("Euler reference")
 hold on
 
@@ -36,19 +34,19 @@ figure(3);
 hold on;
 for j = 1:numel(solverType)
 
-     time_points = [];
-     vector_points = [];
+     time_points = []; % starting a new array for each solverType
+     vector_points = []; 
     
     for i = 1:numel(h_step)
         
         result = rayTracing2DFunc([12,0], [0.5,0.5], solverType(j), "IsoFluid", @gauss_2D, ...
             struct('h', h_step(i), 'tmax', 100., 'epsilon', 0.01, 'tolerance', 0.001, 'alfa', 0.5));
-time_points = [time_points, result.times];
+time_points = [time_points, result.times]; % adding columns into initialized empty arrays 
 vector_points = [vector_points, result.x];
     end 
-    plot(time_points, vector_points, '-', 'DisplayName', solverType(j))
-end
-xlabel('Time'); ylabel('X-vector');
+    plot(time_points, vector_points, '-', 'DisplayName', solverType(j)) % plot for Solver(j) on h_step
+end 
+xlabel('Time, [ms]'); ylabel('X-vector, [mm]');
 xlim([0, 110]); ylim([-10, 80]); legend('show');
 %% ERROR TRACING under x0,y0: VAR: [h & solverType]
 % % Initialize arrays to store data points
